@@ -90,10 +90,12 @@ class tetrahedral_orientation_fix:
                 return (np.dot(A,x)-b)**2
             results = O.leastsq(Axb, F, args=(X.T,Y))
             F = results[0].reshape((3,3))
-            # temp fix
+            # temp fix - dirty fix FIXME
+            # This fixes det(R) becoming different from 1
+            # Tested in numpy 1.4.x not in 1.6.x
             F *= (np.abs(F)>1.0e-12)
             F = np.matrix(F)
-
+        
             # Polar decomposition
             import numpy.linalg as L
             w,v = L.eig(np.dot(F.T,F))
