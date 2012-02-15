@@ -127,7 +127,7 @@ class eam_model:
     def get_force(self):
         rijlist, i_type, j_type, ij_pairtype, rcutcond = self.calc_rij_and_lists()
         rs = np.sqrt((rijlist**2).sum(axis=1))
-        rijhat = (rijlist.T/rs).T
+        rijhat = (rijlist.T/rs).T.copy()
         dV = self.V_spl.eval_y_multi(rs, ij_pairtype, d=1)
 
         N = len(self.coords)
@@ -178,7 +178,6 @@ class eam_model:
     def get_pressure(self, GPa=False):
         rijlist, i_type, j_type, ij_pairtype, rcutcond = self.calc_rij_and_lists()
         rs = np.sqrt((rijlist**2).sum(axis=1))
-        rijhat = (rijlist.T/rs).T
         dV = self.V_spl.eval_y_multi(rs, ij_pairtype, d=1)
 
         N = len(self.coords)
@@ -212,11 +211,10 @@ class eam_model:
                     drhoi++;
                     drhoj++;
                     dV++;
-                    rijhat+=3;
                 }
             }
         """
-        W.inline(code, ['P', 'rs', 'rcutcond', 'dV', 'drhoi', 'drhoj', 'rijhat', 'dF', 'n', 'neighborlist']) 
+        W.inline(code, ['P', 'rs', 'rcutcond', 'dV', 'drhoi', 'drhoj', 'dF', 'n', 'neighborlist']) 
         V = np.linalg.det(self.box)
         if GPa:
             return P/3/V*160.217646
@@ -225,7 +223,7 @@ class eam_model:
     def get_hessian_directional(self, d):
         rijlist, i_type, j_type, ij_pairtype, rcutcond = self.calc_rij_and_lists()
         rs = np.sqrt((rijlist**2).sum(axis=1))
-        rijhat = (rijlist.T/rs).T
+        rijhat = (rijlist.T/rs).T.copy()
         dV, ddV = self.V_spl.eval_y_multi(rs, ij_pairtype, d=(1,2))
 
         N = len(self.coords)
@@ -282,7 +280,7 @@ class eam_model:
         #Implement the Marek's relaxation step determining method
         rijlist, i_type, j_type, ij_pairtype, rcutcond = self.calc_rij_and_lists()
         rs = np.sqrt((rijlist**2).sum(axis=1))
-        rijhat = (rijlist.T/rs).T
+        rijhat = (rijlist.T/rs).T.copy()
         dV, ddV = self.V_spl.eval_y_multi(rs, ij_pairtype, d=(1,2))
 
         N = len(self.coords)
@@ -367,7 +365,7 @@ class eam_model:
 
 if __name__ == '__main__':
     model = eam_model('eam.tab', 7.0, 0.9)
-    box, coords, ityp, ityp2, typnam = readfiles.readxyz('test.xyz')
+    box, coords, ityp, ityp2, typnam = readfiles.readxyz('1_1-1.xyz')
     # dirty change
     model.set_atoms(box, coords, ityp)
     print model.get_energy()
