@@ -89,7 +89,10 @@ class tetrahedral_orientation_fix:
             def Axb(x,A,b):
                 return (np.dot(A,x)-b)**2
             results = O.leastsq(Axb, F, args=(X.T,Y))
-            F = np.matrix(results[0].reshape((3,3)))
+            F = results[0].reshape((3,3))
+            # temp fix
+            F *= (np.abs(F)>1.0e-12)
+            F = np.matrix(F)
 
             # Polar decomposition
             import numpy.linalg as L
@@ -97,6 +100,7 @@ class tetrahedral_orientation_fix:
             P = v*np.diag(np.sqrt(w))*v.T
             R = F*L.inv(P)
             detR = L.det(R)
+            #print detR
 
             # FIXME - Some gives a improper rotation which seems to screw
             # things up

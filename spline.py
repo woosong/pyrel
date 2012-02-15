@@ -133,13 +133,13 @@ class spline:
         W.inline(code, ['N', 'n', 'ind', 'xi', 'y0', 'y1', 'y2', 'y3', 'xs', 'x'] + ddictlist)
         #y = self.y1[zip(ind,xi)] + 2*self.y2[zip(ind,xi)]*dx + 3*self.y3[zip(ind,xi)]*dx**2
         if 0 in d:
-            y[xi0cond.nonzero()] = 0
+            #y[xi0cond.nonzero()] = 0
             y[xilargecond.nonzero()] = 0
         if 1 in d:
-            dy[xi0cond.nonzero()] = 0
+            #dy[xi0cond.nonzero()] = 0
             dy[xilargecond.nonzero()] = 0
         if 2 in d:
-            d2y[xi0cond.nonzero()] = 0
+            #d2y[xi0cond.nonzero()] = 0
             d2y[xilargecond.nonzero()] = 0
         if ddict:
             results = [y, dy, d2y]

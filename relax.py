@@ -32,22 +32,63 @@ class relaxation:
     def addconstraint(self, constraint):
         self.constraints.append(constraint)
 
-    def relax(self, steps=1000, hardconstraint=False):
+    def relax(self, steps=1000, hardconstraint=False, verbose=True, dramax=0.2):
+        orgsteps = steps
+        dramax /= self.model.box[0,0]
+        #print "Using dramax ",dramax,"Angstroms"
         gamma = 0.4
-        for i in range(steps):
-            f = self.model.get_force()
-            d = gamma*self.model.get_relaxation_step()/self.model.box[0,0]
-            for const in self.constraints:
-                d = const.constrain(self.model.coords, d)
-            self.model.move_atoms(d)
-            if hardconstraint and i%10==0:
+        nsteps = 0
+        esteps = 0
+        olde = self.model.get_energy()
+        i = 0
+        while i < steps:
+            i += 1
+            if hardconstraint:
                 newcoord = self.model.coords.copy()
                 for const in self.constraints:
                     const.fixorientation(newcoord)
                 self.model.move_atoms(newcoord-self.model.coords)
+            f = self.model.get_force()
+            d = gamma*self.model.get_relaxation_step()/self.model.box[0,0]
+            #orgd = d.copy()
+            for const in self.constraints:
+                d = const.constrain(self.model.coords, d)
+            dmx = d.max()
+            if dmx > dramax:
+                print "DMAX!"
+                d *= dramax/dmx
+                # if DMAX, allow one step more
+                steps += 1
+                if steps > orgsteps*10:
+                    # throw an error if it took too long
+                    assert False
+            """
+            if len(self.constraints) > 0:
+                # Check if it goes uphill after applying constraints
+                if (f*d).sum()<0:
+                    nsteps += 1
+                    # stop with two consecutive negative steps
+                    if nsteps > 2:
+                        break
+                else:
+                    nsteps = 0
+            """
+            self.model.move_atoms(d)
             energy = self.model.get_energy()
-            print "Step ", i, energy, (f*d).sum()/self.model.box[0,0]
-            
+            if verbose:
+                print "Step ", i, energy, (f*d).sum()/self.model.box[0,0]
+                if np.abs(energy-olde)*steps < 1.0e-4:
+                    break
+                if energy>olde and dmx < dramax:
+                    esteps += 1
+                    if esteps > 3:
+                        break
+                else:
+                    esteps = 0
+                olde = energy
+                #, (f*orgd).sum()/self.model.box[0,0]
+        return energy
+
     def run_cg(self, steps=1000, err=1.0e-10, eps=1.0e-3):
         # Run nonlinear CG
         x = self.model.coords.flatten()
@@ -92,11 +133,11 @@ class relaxation:
 
 if __name__ == '__main__':
     model = eam_model('eam.tab', 7.0, 0.9)
-    relaxation = relaxation(model, '1-7.xyz')
+    relaxation = relaxation(model, '1_1-1.xyz')
     constraint = tetfix.tetrahedral_orientation_fix(relaxation.typnam, model.box)
     constraint.set_original_coords(model.coords)
     #relaxation.run_cg(steps=100)
-    relaxation.addconstraint(constraint)
+    #relaxation.addconstraint(constraint)
     relaxation.relax(steps=100, hardconstraint=True)
     #constraint.fixorientation(model.coords)
     #relaxation.relax(steps=1)
